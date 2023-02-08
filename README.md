@@ -15,7 +15,7 @@ reshader
 
 ## TODO
 
-* [] Download the fixed shaders and install them into the GShade shaders
-* [] Finalize the messages
-* [] Clean up the source code
-* [] Maybe add support for MacOS?
+* [ ] Download the fixed shaders and install them into the GShade shaders
+* [ ] Finalize the messages
+* [ ] Clean up the source code
+* [ ] Maybe add support for MacOS?
