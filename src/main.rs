@@ -1,6 +1,6 @@
 use std::{
     fmt::{Display, Formatter},
-    path::PathBuf,
+    path::PathBuf, io::{Read, Seek},
 };
 
 use colored::Colorize;
@@ -112,25 +112,27 @@ async fn install_reshade(config: &mut Config, vanilla: bool) -> InquireResult<()
     .await
     .expect("Could not download d3dcompiler_47.dll");
 
-    let mut cmd = std::process::Command::new("7z");
-    let cmd = cmd
-        .arg("x")
-        .arg(format!("-o{}", tmp.path().to_str().unwrap()))
-        .arg(reshade_path.to_str().unwrap())
-        .arg("ReShade64.dll");
-    let output = cmd.output().expect("Could not extract ReShade installer");
-    if !output.status.success() {
-        println!(
-            "Could not extract ReShade installer: {}",
-            String::from_utf8_lossy(&output.stderr)
-        );
-        return Ok(());
+    // search the exe for the byte sequence 0x50, 0x4b, 0x03, 0x04
+    // and feed that into a stream
+    let exe = std::fs::File::open(&reshade_path).expect("Could not open ReShade installer");
+    let mut exe = std::io::BufReader::new(exe);
+    let mut buf = [0u8; 4];
+    let mut offset = 0;
+    loop {
+        exe.read_exact(&mut buf).expect("Could not read ReShade installer");
+        if buf == [0x50, 0x4b, 0x03, 0x04] {
+            break;
+        }
+        offset += 1;
+        exe.seek(std::io::SeekFrom::Start(offset)).expect("Could not read ReShade installer");
     }
+    let mut contents = zip::ZipArchive::new(exe).expect("Could not read ReShade installer");
+    // extract ReShade64.dll from the exe
+    let mut buf = Vec::new();
+    contents.by_name("ReShade64.dll").unwrap().read_to_end(&mut buf).expect("Could not read ReShade installer");
+    let reshade_dll = game_path.join("dxgi.dll");
+    std::fs::write(&reshade_dll, buf).expect("Could not write ReShade installer");
 
-    // Move ReShade64.dll to game directory
-    let reshade_dll = tmp.path().join("ReShade64.dll");
-    std::fs::copy(reshade_dll, game_path.join("dxgi.dll"))
-        .expect("Could not copy ReShade64.dll to game directory");
     std::fs::copy(d3dcompiler_path, game_path.join("d3dcompiler_47.dll"))
         .expect("Could not copy d3dcompiler_47.dll to game directory");
 
@@ -358,9 +360,6 @@ async fn main() -> InquireResult<()> {
         std::fs::write(&config_path, config_str).expect("Could not write config file");
         config
     };
-
-    let mut cmd = std::process::Command::new("7z");
-    cmd.output().expect("Please make sure 7z is installed");
 
     loop {
         let install_option =
