@@ -508,6 +508,10 @@ async fn main() -> InquireResult<()> {
                 uninstall(&mut config, &game_path)?;
             }
         }
+
+        let config_str =
+            toml::to_string(&config).expect("if you see this error, the toml library is broken");
+        std::fs::write(config_path, config_str)?;
     } else {
         tui(
             &mut config,
