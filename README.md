@@ -19,3 +19,4 @@ reshader
 * [ ] Finalize the messages
 * [ ] Clean up the source code
 * [ ] Maybe add support for MacOS?
+* [ ] Add documentation

@@ -234,7 +234,6 @@ async fn install_reshade(
 }
 
 async fn install_presets(
-    config: &mut Config,
     directory: &PathBuf,
     presets_path: &PathBuf,
     shaders_path: &PathBuf,
@@ -369,7 +368,6 @@ async fn tui(
                     continue;
                 }
                 install_presets(
-                    config,
                     data_dir,
                     &data_dir.join("presets.zip"),
                     &data_dir.join("shaders.zip"),
@@ -490,7 +488,7 @@ async fn main() -> InquireResult<()> {
                 let presets_path = PathBuf::from(presets);
                 let shaders_path = PathBuf::from(shaders);
 
-                install_presets(&mut config, &data_dir, &presets_path, &shaders_path).await?;
+                install_presets(&data_dir, &presets_path, &shaders_path).await?;
                 if all {
                     for game_path in &config.game_paths {
                         let game_path = PathBuf::from(game_path);
