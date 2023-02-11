@@ -1,7 +1,3 @@
-fn _true() -> bool {
-    true
-}
-
 #[derive(Debug, clap::Parser)]
 #[command(author, version, about)]
 pub struct CliArgs {
