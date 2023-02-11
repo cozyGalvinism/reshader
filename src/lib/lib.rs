@@ -7,7 +7,6 @@ use dircpy::CopyBuilder;
 
 use crate::prelude::*;
 
-mod config;
 pub mod prelude;
 
 static APP_VERSION: &str = env!("CARGO_PKG_VERSION");
