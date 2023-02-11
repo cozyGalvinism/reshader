@@ -16,6 +16,12 @@ pub enum ReShaderError {
     ReadZipFile,
     #[error("Unable to extract zip file")]
     ExtractZipFile,
+
+    #[error(transparent)]
+    Io(#[from] std::io::Error),
+
+    #[error(transparent)]
+    Reqwest(#[from] reqwest::Error),
 }
 
 impl From<ReShaderError> for inquire::InquireError {
@@ -23,3 +29,6 @@ impl From<ReShaderError> for inquire::InquireError {
         inquire::InquireError::Custom(Box::new(value))
     }
 }
+
+pub type Result<T> = std::result::Result<T, ReShaderError>;
+pub use crate::config::Config;
