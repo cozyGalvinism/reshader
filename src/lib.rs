@@ -12,7 +12,7 @@ pub mod prelude;
 
 static APP_VERSION: &str = env!("CARGO_PKG_VERSION");
 
-pub async fn download_file(client: &reqwest::Client, url: &str, path: &str) -> Result<()> {
+pub async fn download_file(client: &reqwest::Client, url: &str, path: &str) -> ReShaderResult<()> {
     let resp = client
         .get(url)
         .header(
@@ -35,7 +35,7 @@ pub async fn get_latest_reshade_version(
     client: &reqwest::Client,
     version: Option<String>,
     vanilla: bool,
-) -> Result<String> {
+) -> ReShaderResult<String> {
     let version = if let Some(version) = version {
         version
     } else {
@@ -93,7 +93,7 @@ pub async fn download_reshade(
     vanilla: bool,
     version: Option<String>,
     specific_installer: &Option<String>,
-) -> Result<()> {
+) -> ReShaderResult<()> {
     let tmp = tempdir::TempDir::new("reshader_downloads")?;
 
     let reshade_path = if let Some(specific_installer) = specific_installer {
@@ -152,11 +152,10 @@ pub async fn download_reshade(
 }
 
 pub async fn install_reshade(
-    config: &mut Config,
     data_dir: &Path,
     game_path: &Path,
     vanilla: bool,
-) -> Result<()> {
+) -> ReShaderResult<()> {
     if game_path.join("dxgi.dll").exists() {
         std::fs::remove_file(game_path.join("dxgi.dll"))?;
     }
@@ -181,17 +180,6 @@ pub async fn install_reshade(
         game_path.join("d3dcompiler_47.dll"),
     )?;
 
-    if config
-        .game_paths
-        .contains(&game_path.to_str().unwrap().to_string())
-    {
-        return Ok(());
-    }
-
-    config
-        .game_paths
-        .push(game_path.to_str().unwrap().to_string());
-
     Ok(())
 }
 
@@ -199,7 +187,7 @@ pub async fn install_presets(
     directory: &PathBuf,
     presets_path: &PathBuf,
     shaders_path: &PathBuf,
-) -> Result<()> {
+) -> ReShaderResult<()> {
     let file = std::fs::File::open(presets_path)?;
     let mut presets_zip =
         zip::read::ZipArchive::new(file).map_err(|_| ReShaderError::ReadZipFile)?;
@@ -233,7 +221,7 @@ pub async fn install_presets(
     Ok(())
 }
 
-pub fn uninstall(config: &mut Config, game_path: &Path) -> Result<()> {
+pub fn uninstall(game_path: &Path) -> ReShaderResult<()> {
     let dxgi_path = PathBuf::from(&game_path).join("dxgi.dll");
     let d3dcompiler_path = PathBuf::from(&game_path).join("d3dcompiler_47.dll");
     let presets_path = PathBuf::from(&game_path).join("reshade-presets");
@@ -252,14 +240,10 @@ pub fn uninstall(config: &mut Config, game_path: &Path) -> Result<()> {
         std::fs::remove_dir_all(shaders_path)?;
     }
 
-    config
-        .game_paths
-        .retain(|path| path != &game_path.to_str().unwrap().to_string());
-
     Ok(())
 }
 
-pub fn install_preset_for_game(data_dir: &Path, game_path: &Path) -> Result<()> {
+pub fn install_preset_for_game(data_dir: &Path, game_path: &Path) -> ReShaderResult<()> {
     let target_preset_path = PathBuf::from(game_path).join("reshade-presets");
     let target_shaders_path = PathBuf::from(game_path).join("reshade-shaders");
 

@@ -9,12 +9,13 @@ use cli::SubCommand;
 use inquire::error::InquireResult;
 use strum::{EnumIter, IntoEnumIterator};
 
-use reshader::{
-    download_reshade, install_preset_for_game, install_presets, install_reshade, prelude::*,
-    uninstall,
+use crate::config::Config;
+use reshaderlib::{
+    download_reshade, install_preset_for_game, install_presets, install_reshade, uninstall,
 };
 
 mod cli;
+mod config;
 mod tui;
 
 static QUALIFIER: &str = "eu";
@@ -65,8 +66,20 @@ async fn tui(
                 let install_now = tui::prompt_install()?;
                 if install_now {
                     let game_path = tui::prompt_game_path()?;
-                    install_reshade(config, data_dir, &game_path, false).await?;
+                    install_reshade(data_dir, &game_path, false).await?;
                     tui::print_reshade_success();
+
+                    if config
+                        .game_paths
+                        .contains(&game_path.to_str().unwrap().to_string())
+                    {
+                        return Ok(());
+                    }
+
+                    config
+                        .game_paths
+                        .push(game_path.to_str().unwrap().to_string());
+
                     Ok(())
                 } else {
                     Ok(())
@@ -77,8 +90,20 @@ async fn tui(
                 let install_now = tui::prompt_install()?;
                 if install_now {
                     let game_path = tui::prompt_game_path()?;
-                    install_reshade(config, data_dir, &game_path, true).await?;
+                    install_reshade(data_dir, &game_path, true).await?;
                     tui::print_reshade_success();
+
+                    if config
+                        .game_paths
+                        .contains(&game_path.to_str().unwrap().to_string())
+                    {
+                        return Ok(());
+                    }
+
+                    config
+                        .game_paths
+                        .push(game_path.to_str().unwrap().to_string());
+
                     Ok(())
                 } else {
                     Ok(())
@@ -137,7 +162,11 @@ async fn tui(
                 }
 
                 let game_path = tui::prompt_select_game_path_uninstall(config.game_paths.clone())?;
-                uninstall(config, &game_path)?;
+                uninstall(&game_path)?;
+
+                config
+                    .game_paths
+                    .retain(|path| path != &game_path.to_str().unwrap().to_string());
 
                 Ok(())
             }
@@ -173,7 +202,19 @@ async fn cli(
             download_reshade(client, data_dir, vanilla, version, &specific_installer).await?;
             if let Some(game) = game {
                 let game_path = PathBuf::from(game);
-                install_reshade(config, data_dir, &game_path, vanilla).await?;
+                install_reshade(data_dir, &game_path, vanilla).await?;
+                tui::print_reshade_success();
+
+                if config
+                    .game_paths
+                    .contains(&game_path.to_str().unwrap().to_string())
+                {
+                    return Ok(());
+                }
+
+                config
+                    .game_paths
+                    .push(game_path.to_str().unwrap().to_string());
             } else {
                 tui::print_reshade_success_no_games(data_dir);
             }
@@ -204,7 +245,11 @@ async fn cli(
         }
         cli::SubCommand::Uninstall { game } => {
             let game_path = PathBuf::from(game);
-            uninstall(config, &game_path)?;
+            uninstall(&game_path)?;
+
+            config
+                .game_paths
+                .retain(|path| path != &game_path.to_str().unwrap().to_string());
         }
     }
 

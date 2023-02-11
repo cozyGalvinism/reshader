@@ -8,6 +8,14 @@ exclude = [
     ".gitignore"
 ]
 
+[lib]
+name = "reshaderlib"
+path = "src/lib.rs"
+
+[[bin]]
+name = "reshader"
+path = "src/main.rs"
+
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]

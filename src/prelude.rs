@@ -30,5 +30,4 @@ impl From<ReShaderError> for inquire::InquireError {
     }
 }
 
-pub type Result<T> = std::result::Result<T, ReShaderError>;
-pub use crate::config::Config;
+pub type ReShaderResult<T> = std::result::Result<T, ReShaderError>;

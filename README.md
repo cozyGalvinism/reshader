@@ -1,6 +1,6 @@
 # ReShader
 
-A tool to install ReShade on Linux!
+A tool and library for installing ReShade on Linux!
 
 **This tool is still work in progress, so expect bugs!**
 
@@ -39,6 +39,14 @@ reshader --use-installer /home/user/ReShader-Installer.exe
 ```
 
 which will skip the download of the EXE and just extract this EXE.
+
+## Usage as library
+
+Since ReShader is a hybrid crate, you can also write your own installer using the same functions to download and install ReShade.
+This saves some time as you don't have to implement your own downloading and copying mechanisms and you can instead focus on your
+user interface.
+
+Just import `reshaderlib` into your project and use the provided functions!
 
 ## TODO
 
