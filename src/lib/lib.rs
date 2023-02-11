@@ -1,22 +1,35 @@
+#![deny(missing_docs)]
+
+//! # reshaderlib
+//!
+//! This library contains the common code for the ReShader installer.
+//!
+//! You can use this crate as a base to create your own ReShade installer.
+//!
+//! ## Examples
+//!
+//! For examples, please look at the [ReShader installer](https://github.com/cozyGalvinism/reshader).
+
+use dircpy::CopyBuilder;
 use std::{
     io::{Read, Seek},
     path::{Path, PathBuf},
 };
 
-use dircpy::CopyBuilder;
-
 use crate::prelude::*;
 
+/// Common ReShader types and functions
 pub mod prelude;
 
-static APP_VERSION: &str = env!("CARGO_PKG_VERSION");
+static LIB_VERSION: &str = env!("CARGO_PKG_VERSION");
 
+/// Downloads a file from the given URL to the given path
 pub async fn download_file(client: &reqwest::Client, url: &str, path: &str) -> ReShaderResult<()> {
     let resp = client
         .get(url)
         .header(
             reqwest::header::USER_AGENT,
-            format!("reshader/{APP_VERSION}"),
+            format!("reshader/{LIB_VERSION}"),
         )
         .send()
         .await
@@ -30,6 +43,10 @@ pub async fn download_file(client: &reqwest::Client, url: &str, path: &str) -> R
     Ok(())
 }
 
+/// Fetches the latest ReShade version from GitHub.
+///
+/// Alternatively, if `version` is provided, it will return that version.
+/// Please note that there is no check to see if the version is valid or not.
 pub async fn get_latest_reshade_version(
     client: &reqwest::Client,
     version: Option<String>,
@@ -42,7 +59,7 @@ pub async fn get_latest_reshade_version(
             .get("https://api.github.com/repos/crosire/reshade/tags")
             .header(
                 reqwest::header::USER_AGENT,
-                format!("reshader/{APP_VERSION}"),
+                format!("reshader/{LIB_VERSION}"),
             )
             .send()
             .await
@@ -86,6 +103,13 @@ pub async fn get_latest_reshade_version(
     }
 }
 
+/// Downloads ReShade and d3dcopmiler_47.dll to the given directory.
+///
+/// If `specific_installer` is provided, it will use that installer instead of downloading the latest version.
+///
+/// If `version` is provided, it will use that version instead of the latest version.
+///
+/// If `vanilla` is true, it will download the vanilla version of ReShade instead of the addon version.
 pub async fn download_reshade(
     client: &reqwest::Client,
     target_directory: &Path,
@@ -150,6 +174,10 @@ pub async fn download_reshade(
     Ok(())
 }
 
+/// Installs ReShade to the given game directory by symlinking the ReShade dll
+/// and d3dcompiler_47.dll to the game directory.
+///
+/// Depending on the `vanilla` parameter, it will symlink the vanilla or addon version of ReShade.
 pub async fn install_reshade(
     data_dir: &Path,
     game_path: &Path,
@@ -182,6 +210,10 @@ pub async fn install_reshade(
     Ok(())
 }
 
+/// Installs GShade presets and shaders to the given directory.
+///
+/// This does **not** download the presets and shaders, it just extracts them
+/// from the given zip files.
 pub async fn install_presets(
     directory: &PathBuf,
     presets_path: &PathBuf,
@@ -220,6 +252,10 @@ pub async fn install_presets(
     Ok(())
 }
 
+/// Uninstalls ReShade from the given game directory by removing the ReShade dll
+/// (dxgi.dll) and d3dcompiler_47.dll.
+///
+/// INI files are not removed.
 pub fn uninstall(game_path: &Path) -> ReShaderResult<()> {
     let dxgi_path = PathBuf::from(&game_path).join("dxgi.dll");
     let d3dcompiler_path = PathBuf::from(&game_path).join("d3dcompiler_47.dll");
@@ -242,6 +278,7 @@ pub fn uninstall(game_path: &Path) -> ReShaderResult<()> {
     Ok(())
 }
 
+/// Installs the GShade presets and shaders to the given game directory by symlinking
 pub fn install_preset_for_game(data_dir: &Path, game_path: &Path) -> ReShaderResult<()> {
     let target_preset_path = PathBuf::from(game_path).join("reshade-presets");
     let target_shaders_path = PathBuf::from(game_path).join("reshade-shaders");

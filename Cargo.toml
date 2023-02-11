@@ -5,7 +5,9 @@ edition = "2021"
 authors = ["cozyGalvinism <jean@der-capta.in>"]
 exclude = [
     "README.md",
-    ".gitignore"
+    ".gitignore",
+    "rustfmt.toml",
+    ".github"
 ]
 
 [lib]
