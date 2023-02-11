@@ -1,7 +1,7 @@
-use std::path::{PathBuf, Path};
+use std::path::{Path, PathBuf};
 
 use colored::Colorize;
-use inquire::{error::InquireResult, Text, InquireError};
+use inquire::{error::InquireResult, InquireError, Text};
 
 pub fn prompt_game_path() -> InquireResult<PathBuf> {
     let game_path = Text::new("Enter the path to your ReShade-supported game")
@@ -44,9 +44,9 @@ pub fn prompt_confirm_move() -> InquireResult<bool> {
 
 pub fn prompt_install_presets_for_games() -> InquireResult<bool> {
     inquire::Confirm::new("Do you want to install the preset and shaders for games now?")
-            .with_help_message("This simplifies the configuration of GShade for the game.")
-            .with_default(true)
-            .prompt()
+        .with_help_message("This simplifies the configuration of GShade for the game.")
+        .with_default(true)
+        .prompt()
 }
 
 pub fn prompt_select_game_paths(paths: Vec<String>) -> InquireResult<Vec<String>> {
@@ -58,11 +58,9 @@ pub fn prompt_select_game_paths(paths: Vec<String>) -> InquireResult<Vec<String>
 }
 
 pub fn prompt_select_game_path_uninstall(paths: Vec<String>) -> InquireResult<PathBuf> {
-    let game_path = inquire::Select::new(
-        "Select the game you want to uninstall ReShade from",
-        paths,
-    )
-    .prompt()?;
+    let game_path =
+        inquire::Select::new("Select the game you want to uninstall ReShade from", paths)
+            .prompt()?;
     let game_path = shellexpand::tilde(&game_path).to_string();
     Ok(std::path::Path::new(&game_path).to_path_buf())
 }
@@ -94,8 +92,16 @@ pub fn print_gshade_file_move(directory: &Path) {
 
 pub fn print_gshade_hint() {
     println!();
-    println!("{}", "If your browser does not open, please open the following links manually:".cyan());
-    println!("{}", "https://github.com/HereInPlainSight/gshade_installer/blob/master/gshade_installer.sh#L352".white().bold());
+    println!(
+        "{}",
+        "If your browser does not open, please open the following links manually:".cyan()
+    );
+    println!(
+        "{}",
+        "https://github.com/HereInPlainSight/gshade_installer/blob/master/gshade_installer.sh#L352"
+            .white()
+            .bold()
+    );
     println!();
 }
 
@@ -141,7 +147,10 @@ pub fn print_presets_success() {
 
 pub fn print_no_game_paths() {
     println!();
-    println!("{}", "No game paths with an installed ReShade or GShade found.".bright_red());
+    println!(
+        "{}",
+        "No game paths with an installed ReShade or GShade found.".bright_red()
+    );
     println!();
 }
 
@@ -153,7 +162,11 @@ pub fn print_no_home_dir() {
 
 pub fn print_config_deserialization_error() {
     println!();
-    println!("{}", "Could not deserialize the configuration file. Please make sure it is valid and try again.".bright_red());
+    println!(
+        "{}",
+        "Could not deserialize the configuration file. Please make sure it is valid and try again."
+            .bright_red()
+    );
     println!();
 }
 

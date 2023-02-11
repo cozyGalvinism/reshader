@@ -6,6 +6,7 @@ use std::{
 };
 
 use clap::Parser;
+use cli::SubCommand;
 use config::Config;
 use dircpy::CopyBuilder;
 use inquire::error::InquireResult;
@@ -422,6 +423,65 @@ async fn tui(
     Ok(())
 }
 
+async fn cli(
+    subcommand: SubCommand,
+    config: &mut Config,
+    client: &reqwest::Client,
+    data_dir: &PathBuf,
+    config_path: &PathBuf,
+    specific_installer: Option<String>,
+) -> InquireResult<()> {
+    match subcommand {
+        cli::SubCommand::InstallReshade {
+            vanilla,
+            version,
+            game,
+        } => {
+            download_reshade(client, data_dir, vanilla, version, &specific_installer).await?;
+            if let Some(game) = game {
+                let game_path = PathBuf::from(game);
+                install_reshade(config, data_dir, &game_path, vanilla).await?;
+            } else {
+                tui::print_reshade_success_no_games(data_dir);
+            }
+        }
+        cli::SubCommand::InstallPresets {
+            all,
+            game,
+            presets,
+            shaders,
+        } => {
+            let presets_path = PathBuf::from(presets);
+            let shaders_path = PathBuf::from(shaders);
+
+            install_presets(data_dir, &presets_path, &shaders_path).await?;
+            if all {
+                for game_path in &config.game_paths {
+                    let game_path = PathBuf::from(game_path);
+                    install_preset_for_game(data_dir, &game_path)?;
+                }
+
+                tui::print_presets_success();
+            } else if let Some(game) = game {
+                let game_path = PathBuf::from(game);
+                install_preset_for_game(data_dir, &game_path)?;
+
+                tui::print_presets_success();
+            }
+        }
+        cli::SubCommand::Uninstall { game } => {
+            let game_path = PathBuf::from(game);
+            uninstall(config, &game_path)?;
+        }
+    }
+
+    let config_str =
+        toml::to_string(&config).expect("if you see this error, the toml library is broken");
+    std::fs::write(config_path, config_str)?;
+
+    Ok(())
+}
+
 #[tokio::main]
 async fn main() -> InquireResult<()> {
     if !cfg!(target_os = "linux") {
@@ -461,57 +521,18 @@ async fn main() -> InquireResult<()> {
     let client = reqwest::Client::new();
 
     let args = cli::CliArgs::parse();
-
     let specific_installer = args.use_installer;
 
     if let Some(subcommand) = args.subcommand {
-        match subcommand {
-            cli::SubCommand::InstallReshade {
-                vanilla,
-                version,
-                game,
-            } => {
-                download_reshade(&client, &data_dir, vanilla, version, &specific_installer).await?;
-                if let Some(game) = game {
-                    let game_path = PathBuf::from(game);
-                    install_reshade(&mut config, &data_dir, &game_path, vanilla).await?;
-                } else {
-                    tui::print_reshade_success_no_games(&data_dir);
-                }
-            }
-            cli::SubCommand::InstallPresets {
-                all,
-                game,
-                presets,
-                shaders,
-            } => {
-                let presets_path = PathBuf::from(presets);
-                let shaders_path = PathBuf::from(shaders);
-
-                install_presets(&data_dir, &presets_path, &shaders_path).await?;
-                if all {
-                    for game_path in &config.game_paths {
-                        let game_path = PathBuf::from(game_path);
-                        install_preset_for_game(&data_dir, &game_path)?;
-                    }
-
-                    tui::print_presets_success();
-                } else if let Some(game) = game {
-                    let game_path = PathBuf::from(game);
-                    install_preset_for_game(&data_dir, &game_path)?;
-
-                    tui::print_presets_success();
-                }
-            }
-            cli::SubCommand::Uninstall { game } => {
-                let game_path = PathBuf::from(game);
-                uninstall(&mut config, &game_path)?;
-            }
-        }
-
-        let config_str =
-            toml::to_string(&config).expect("if you see this error, the toml library is broken");
-        std::fs::write(config_path, config_str)?;
+        cli(
+            subcommand,
+            &mut config,
+            &client,
+            &data_dir,
+            &config_path,
+            specific_installer,
+        )
+        .await?;
     } else {
         tui(
             &mut config,

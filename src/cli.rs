@@ -17,7 +17,7 @@ pub struct CliArgs {
 #[derive(Debug, clap::Subcommand)]
 pub enum SubCommand {
     /// Install ReShade for a game
-    /// 
+    ///
     /// If use_installer is specified, the arguments for version and vanilla are ignored
     InstallReshade {
         /// Install a version of ReShade that has no support for addons
