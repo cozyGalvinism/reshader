@@ -47,11 +47,3 @@ This saves some time as you don't have to implement your own downloading and cop
 user interface.
 
 Just import `reshaderlib` into your project and use the provided functions!
-
-## TODO
-
-* [ ] Download the fixed shaders and install them into the GShade shaders
-* [ ] Finalize the messages
-* [ ] Clean up the source code
-* [ ] Maybe add support for MacOS?
-* [x] Add documentation
