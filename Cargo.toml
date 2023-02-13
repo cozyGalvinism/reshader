@@ -9,6 +9,7 @@ exclude = [
     "rustfmt.toml",
     ".github"
 ]
+license = "LGPL-3.0-only"
 
 [lib]
 name = "reshaderlib"

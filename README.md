@@ -30,7 +30,7 @@ You can use ReShader in 2 ways:
 
 Both are completely viable options and should have similar features.
 
-Due to how the CLI is built, you can the path to the presets and shaders zip file as opposed to having to put it in the data folder with a specific name. Maybe the TUI will reflect that change in the future, but for now the TUI will have this requirement.
+Due to how the CLI is built, you can specify the path to the presets and shaders zip file as opposed to having to put it in the data folder with a specific name. Maybe the TUI will reflect that change in the future, but for now the TUI will have this requirement.
 
 You can provide your own path to an existing ReShade installer by passing `--use-installer <path>` to ReShader:
 
