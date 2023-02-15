@@ -113,15 +113,15 @@ pub fn clone_reshade_shaders(directory: &Path) -> ReShaderResult<()> {
     if !merge_directory.exists() {
         std::fs::create_dir(&merge_directory)?;
     }
-    let shader_directory = directory.join("Shaders");
+    let shader_directory = merge_directory.join("Shaders");
     if !shader_directory.exists() {
         std::fs::create_dir(&shader_directory)?;
     }
-    let texture_directory = directory.join("Textures");
+    let texture_directory = merge_directory.join("Textures");
     if !texture_directory.exists() {
         std::fs::create_dir(&texture_directory)?;
     }
-    let intermediate_directory = directory.join("Intermediate");
+    let intermediate_directory = merge_directory.join("Intermediate");
     if !intermediate_directory.exists() {
         std::fs::create_dir(&intermediate_directory)?;
     }
@@ -161,12 +161,15 @@ pub fn clone_reshade_shaders(directory: &Path) -> ReShaderResult<()> {
 /// This function will create a symlink called `reshade-shaders` in the game directory
 pub fn install_reshade_shaders(directory: &Path, game_path: &Path) -> ReShaderResult<()> {
     let target_path = game_path.join("reshade-shaders");
-    if target_path.exists() {
+    // if target_path exists and is not a symlink, return an error
+    if target_path.exists() && std::fs::read_link(&target_path).is_err() {
         return Err(ReShaderError::Symlink(
             directory.to_str().unwrap().to_string(),
             target_path.to_str().unwrap().to_string(),
             "Directory already exists".to_string(),
         ));
+    } else if target_path.exists() && std::fs::read_link(&target_path).is_ok() {
+        return Ok(());
     }
 
     std::os::unix::fs::symlink(directory, &target_path)?;
@@ -421,22 +424,16 @@ pub fn uninstall(game_path: &Path) -> ReShaderResult<()> {
 
 /// Installs the GShade presets and shaders to the given game directory by symlinking
 pub fn install_preset_for_game(data_dir: &Path, game_path: &Path) -> ReShaderResult<()> {
-    let target_preset_path = PathBuf::from(game_path).join("reshade-presets");
-    let target_shaders_path = PathBuf::from(game_path).join("reshade-shaders");
+    let target_preset_path = PathBuf::from(game_path).join("gshade-presets");
+    let target_shaders_path = PathBuf::from(game_path).join("gshade-shaders");
 
-    if std::fs::read_link(target_preset_path).is_ok()
-        || std::fs::read_link(target_shaders_path).is_ok()
+    if std::fs::read_link(&target_preset_path).is_ok()
+        || std::fs::read_link(&target_shaders_path).is_ok()
     {
         return Ok(());
     }
 
-    std::os::unix::fs::symlink(
-        data_dir.join("reshade-presets"),
-        PathBuf::from(game_path).join("reshade-presets"),
-    )?;
-    std::os::unix::fs::symlink(
-        data_dir.join("reshade-shaders"),
-        PathBuf::from(game_path).join("reshade-shaders"),
-    )?;
+    std::os::unix::fs::symlink(data_dir.join("reshade-presets"), target_preset_path)?;
+    std::os::unix::fs::symlink(data_dir.join("reshade-shaders"), target_shaders_path)?;
     Ok(())
 }

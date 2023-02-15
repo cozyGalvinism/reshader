@@ -126,7 +126,7 @@ async fn tui(
                         tui::prompt_select_game_paths_shaders(config.game_paths.clone())?;
                     for game_path in &game_paths {
                         let game_path = PathBuf::from(game_path);
-                        install_reshade_shaders(data_dir, &game_path)?;
+                        install_reshade_shaders(&data_dir.join("Merged"), &game_path)?;
                     }
                     tui::print_shader_install_successful();
                     Ok(())
@@ -354,7 +354,7 @@ async fn main() -> InquireResult<()> {
             &mut config,
             &client,
             &data_dir,
-            &config_dir,
+            &config_path,
             specific_installer,
         )
         .await?;

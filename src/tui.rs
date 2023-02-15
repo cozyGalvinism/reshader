@@ -146,17 +146,7 @@ pub fn print_reshade_success_no_games(directory: &Path) {
 
 pub fn print_presets_success() {
     println!();
-    println!(
-        "{}",
-        "Installation complete! You now need to configure your ReShade as follows:".bright_green()
-    );
-    println!();
-    println!("\t{}", "Set your \"effect search path\" to \"./reshade-shaders/Shaders\" and \"./reshade-shaders/ComputeShaders\"".bright_green());
-    println!(
-        "\t{}",
-        "Set your \"textures search path\" to \"./reshade-shaders/Textures\"".bright_green()
-    );
-    println!("\t{}", "In order to use GShade presets, you might need to browse to them in your ReShade UI. You can find them in your game's directory!".bright_green());
+    println!("{}", "Installation complete!".bright_green());
     println!();
 }
 
