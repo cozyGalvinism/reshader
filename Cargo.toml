@@ -10,6 +10,8 @@ exclude = [
     ".github"
 ]
 license = "LGPL-3.0-only"
+description = "A tool and library for installing ReShade on Linux"
+repository = "https://github.com/cozyGalvinism/reshader"
 
 [lib]
 name = "reshaderlib"
