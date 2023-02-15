@@ -14,9 +14,7 @@ A tool and library for installing ReShade on Linux!
 ## Installation
 
 ```bash
-git clone https://github.com/cozygalvinism/reshader.git
-cd reshader
-cargo install --path .
+cargo install --locked reshader
 ```
 
 ## Usage
