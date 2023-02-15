@@ -13,6 +13,10 @@ pub enum ReShaderError {
     /// Additionally, the second argument is additional information about the error.
     Download(String, String),
 
+    #[error("Could not symlink {0} to {1}: {2}")]
+    /// Occurs when there is a problem symlinking a file or a directory
+    Symlink(String, String, String),
+
     #[error("ReShade installer had no zip file")]
     /// Occurs when the ReShade installer doesn't have a zip file (it's missing its byte sequence for the zip file)
     NoZipFile,
@@ -28,6 +32,16 @@ pub enum ReShaderError {
     /// Occurs when the ReShade installer's zip file cannot be extracted
     ExtractZipFile,
 
+    #[error("Could not find repository for {0}")]
+    /// Occurs when the repository for shaders or presets cannot be found
+    RepositoryNotFound(String),
+    #[error("Could not find branch {0} for repository {1}")]
+    /// Occurs when the branch for shaders or presets cannot be found
+    BranchNotFound(String, String),
+    #[error("Merge conflicts found for branch {0} of repository {1}")]
+    /// Occurs when the branch for shaders or presets cannot be merged
+    MergeConflict(String, String),
+
     #[error(transparent)]
     /// Forwards the errors from `std::io::Error`
     Io(#[from] std::io::Error),
@@ -35,6 +49,10 @@ pub enum ReShaderError {
     #[error(transparent)]
     /// Forwards the errors from `reqwest::Error`
     Reqwest(#[from] reqwest::Error),
+
+    #[error(transparent)]
+    /// Forwards the errors from `git2::Error`
+    Git(#[from] git2::Error),
 }
 
 impl From<ReShaderError> for inquire::InquireError {
