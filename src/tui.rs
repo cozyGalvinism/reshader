@@ -65,6 +65,21 @@ pub fn prompt_select_game_path_uninstall(paths: Vec<String>) -> InquireResult<Pa
     Ok(std::path::Path::new(&game_path).to_path_buf())
 }
 
+pub fn prompt_install_shaders() -> InquireResult<bool> {
+    inquire::Confirm::new("Do you want to install the shaders now?")
+        .with_help_message("Answering no will return to the main menu.")
+        .with_default(true)
+        .prompt()
+}
+
+pub fn prompt_select_game_paths_shaders(paths: Vec<String>) -> InquireResult<Vec<String>> {
+    inquire::MultiSelect::new(
+        "Select the games you want to install the shaders for",
+        paths,
+    )
+    .prompt()
+}
+
 pub fn print_reshade_success() {
     println!();
     println!("{}", "ReShade installed successfully! Please restart your game to enable it. Note that this installation did not install any presets or shaders!".bright_green());
@@ -131,17 +146,7 @@ pub fn print_reshade_success_no_games(directory: &Path) {
 
 pub fn print_presets_success() {
     println!();
-    println!(
-        "{}",
-        "Installation complete! You now need to configure your ReShade as follows:".bright_green()
-    );
-    println!();
-    println!("\t{}", "Set your \"effect search path\" to \"./reshade-shaders/Shaders\" and \"./reshade-shaders/ComputeShaders\"".bright_green());
-    println!(
-        "\t{}",
-        "Set your \"textures search path\" to \"./reshade-shaders/Textures\"".bright_green()
-    );
-    println!("\t{}", "In order to use GShade presets, you might need to browse to them in your ReShade UI. You can find them in your game's directory!".bright_green());
+    println!("{}", "Installation complete!".bright_green());
     println!();
 }
 
@@ -173,5 +178,26 @@ pub fn print_config_deserialization_error() {
 pub fn print_error(error: InquireError) {
     println!();
     println!("{}", format!("An error occurred: {error}").bright_red());
+    println!();
+}
+
+pub fn print_cloning() {
+    println!();
+    println!("{}", "Cloning shader repositories...".cyan());
+    println!();
+}
+
+pub fn print_shader_install_successful() {
+    println!();
+    println!(
+        "{}",
+        "Successfully installed ReShade shaders!".bright_green()
+    );
+    println!();
+}
+
+pub fn print_shader_download_successful() {
+    println!();
+    println!("{}", "Successfully downloaded ReShade shaders! To install them, run this option again and select a game!".bright_green());
     println!();
 }

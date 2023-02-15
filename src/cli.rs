@@ -26,6 +26,12 @@ pub enum SubCommand {
         #[arg(short, long)]
         game: Option<String>,
     },
+    /// Install ReShade shaders for a game
+    InstallReshadeShaders {
+        /// Install the ReShade library for this game. If this isn't set, the installer will only download ReShade.
+        #[arg(short, long)]
+        game: Option<String>,
+    },
     /// Install GShade presets and shaders for a game. If no game is specified and all is not set, the presets and shaders will only be downloaded.
     InstallPresets {
         /// Install the presets and shaders for all games
