@@ -11,7 +11,8 @@ use strum::{EnumIter, IntoEnumIterator};
 
 use crate::config::Config;
 use reshaderlib::{
-    download_reshade, install_preset_for_game, install_presets, install_reshade, uninstall,
+    clone_reshade_shaders, download_reshade, install_preset_for_game, install_presets,
+    install_reshade, install_reshade_shaders, uninstall,
 };
 
 mod cli;
@@ -26,7 +27,8 @@ static APPLICATION: &str = "reshader";
 enum InstallOption {
     ReShade,
     ReShadeVanilla,
-    Presets,
+    ReShadeShaders,
+    GShadePresets,
     Uninstall,
     Quit,
 }
@@ -39,7 +41,8 @@ impl Display for InstallOption {
                 "Install/Update ReShade (with addon support, recommended)"
             ),
             InstallOption::ReShadeVanilla => write!(f, "Install/Update ReShade (vanilla)"),
-            InstallOption::Presets => write!(
+            InstallOption::ReShadeShaders => write!(f, "Install/Update ReShade shaders"),
+            InstallOption::GShadePresets => write!(
                 f,
                 "Install/Update GShade shaders and presets (install ReShade first)"
             ),
@@ -109,7 +112,30 @@ async fn tui(
                     Ok(())
                 }
             }
-            InstallOption::Presets => {
+            InstallOption::ReShadeShaders => {
+                tui::print_cloning();
+                clone_reshade_shaders(data_dir)?;
+                let install_now = tui::prompt_install_shaders()?;
+
+                if install_now {
+                    if config.game_paths.is_empty() {
+                        tui::print_no_game_paths();
+                        return Ok(());
+                    }
+                    let game_paths =
+                        tui::prompt_select_game_paths_shaders(config.game_paths.clone())?;
+                    for game_path in &game_paths {
+                        let game_path = PathBuf::from(game_path);
+                        install_reshade_shaders(&data_dir.join("Merged"), &game_path)?;
+                    }
+                    tui::print_shader_install_successful();
+                    Ok(())
+                } else {
+                    tui::print_shader_download_successful();
+                    Ok(())
+                }
+            }
+            InstallOption::GShadePresets => {
                 tui::print_gshade_warning();
 
                 let open = tui::prompt_open_links()?;
@@ -219,6 +245,18 @@ async fn cli(
                 tui::print_reshade_success_no_games(data_dir);
             }
         }
+        cli::SubCommand::InstallReshadeShaders { game } => {
+            tui::print_cloning();
+            clone_reshade_shaders(data_dir)?;
+
+            if let Some(game_path) = game {
+                let game_path = PathBuf::from(game_path);
+                install_reshade_shaders(data_dir, &game_path)?;
+                tui::print_shader_install_successful();
+            } else {
+                tui::print_shader_download_successful();
+            }
+        }
         cli::SubCommand::InstallPresets {
             all,
             game,
@@ -316,7 +354,7 @@ async fn main() -> InquireResult<()> {
             &mut config,
             &client,
             &data_dir,
-            &config_dir,
+            &config_path,
             specific_installer,
         )
         .await?;

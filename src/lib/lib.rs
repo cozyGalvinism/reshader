@@ -11,6 +11,7 @@
 //! For examples, please look at the [ReShader installer](https://github.com/cozyGalvinism/reshader).
 
 use dircpy::CopyBuilder;
+use lazy_static::lazy_static;
 use std::{
     io::{Read, Seek},
     path::{Path, PathBuf},
@@ -21,7 +22,70 @@ use crate::prelude::*;
 /// Common ReShader types and functions
 pub mod prelude;
 
+mod git;
+
 static LIB_VERSION: &str = env!("CARGO_PKG_VERSION");
+static DEFAULT_INI: &str = include_str!("../../reshade.example.ini");
+
+lazy_static! {
+    static ref SHADER_REPOSITORIES: Vec<Shader> = vec![
+        Shader::new("SweetFX", "https://github.com/CeeJayDK/SweetFX", true, None),
+        Shader::new("PD80", "https://github.com/prod80/prod80-ReShade-Repository", false, None),
+        // default branch is slim, which doesn't include all shaders
+        Shader::new("ReShade","https://github.com/crosire/reshade-shaders", true, Some("master")),
+        Shader::new("qUINT", "https://github.com/martymcmodding/qUINT", false, None),
+        Shader::new("AstrayFX", "https://github.com/BlueSkyDefender/AstrayFX", false, None),
+    ];
+}
+
+/// A shader repository
+pub struct Shader {
+    /// The name of the shader
+    pub name: String,
+    /// The URL to the shader repository
+    pub repository: String,
+    /// The branch to use
+    pub branch: Option<String>,
+    /// Is this shader an essential shader?
+    pub essential: bool,
+}
+
+impl Shader {
+    /// Creates a new shader repository
+    pub fn new(name: &str, repository: &str, essential: bool, branch: Option<&str>) -> Self {
+        Self {
+            name: name.to_string(),
+            repository: repository.to_string(),
+            branch: branch.map(|b| b.to_string()),
+            essential,
+        }
+    }
+
+    /// Pulls the latest changes from the shader repository
+    pub fn pull(&self, directory: &Path) -> ReShaderResult<()> {
+        let target_directory = directory.join(&self.name);
+        git::pull(&target_directory, self.branch.as_deref())?;
+
+        Ok(())
+    }
+
+    /// Clones the shader repository
+    pub fn clone_repo(&self, target_directory: &Path) -> ReShaderResult<git2::Repository> {
+        let target_directory = target_directory.join(&self.name);
+        if target_directory.exists() {
+            return Ok(git2::Repository::open(&target_directory)?);
+        }
+
+        let fetch_options = git2::FetchOptions::new();
+        let mut builder = git2::build::RepoBuilder::new();
+        builder.fetch_options(fetch_options);
+        if let Some(branch) = &self.branch {
+            builder.branch(branch);
+        }
+
+        Ok(builder.clone(&self.repository, &target_directory)?)
+    }
+}
 
 /// Downloads a file from the given URL to the given path
 pub async fn download_file(client: &reqwest::Client, url: &str, path: &str) -> ReShaderResult<()> {
@@ -40,6 +104,76 @@ pub async fn download_file(client: &reqwest::Client, url: &str, path: &str) -> R
     let mut out = tokio::fs::File::create(path).await?;
     let mut reader = tokio::io::BufReader::new(resp.as_ref());
     tokio::io::copy(&mut reader, &mut out).await?;
+    Ok(())
+}
+
+/// Clones ReShade shaders from their repositories
+pub fn clone_reshade_shaders(directory: &Path) -> ReShaderResult<()> {
+    let merge_directory = directory.join("Merged");
+    if !merge_directory.exists() {
+        std::fs::create_dir(&merge_directory)?;
+    }
+    let shader_directory = merge_directory.join("Shaders");
+    if !shader_directory.exists() {
+        std::fs::create_dir(&shader_directory)?;
+    }
+    let texture_directory = merge_directory.join("Textures");
+    if !texture_directory.exists() {
+        std::fs::create_dir(&texture_directory)?;
+    }
+    let intermediate_directory = merge_directory.join("Intermediate");
+    if !intermediate_directory.exists() {
+        std::fs::create_dir(&intermediate_directory)?;
+    }
+
+    for shader in SHADER_REPOSITORIES.iter() {
+        shader.clone_repo(directory)?;
+        shader.pull(directory)?;
+
+        let repo_directory = directory.join(&shader.name);
+        let repo_shader_directory = repo_directory.join("Shaders");
+        let repo_texture_directory = repo_directory.join("Textures");
+        let target_directory = if shader.essential {
+            shader_directory.clone()
+        } else {
+            shader_directory.join(&shader.name)
+        };
+        if !target_directory.exists() {
+            std::fs::create_dir(&target_directory)?;
+        }
+
+        if repo_shader_directory.exists() {
+            let builder = CopyBuilder::new(&repo_shader_directory, &target_directory);
+            builder.overwrite(true).run()?;
+        }
+
+        if repo_texture_directory.exists() {
+            let builder = CopyBuilder::new(&repo_texture_directory, &texture_directory);
+            builder.overwrite(true).run()?;
+        }
+    }
+
+    Ok(())
+}
+
+/// Installs ReShade shaders and textures to a game directory by symlinking them
+///
+/// This function will create a symlink called `reshade-shaders` in the game directory
+pub fn install_reshade_shaders(directory: &Path, game_path: &Path) -> ReShaderResult<()> {
+    let target_path = game_path.join("reshade-shaders");
+    // if target_path exists and is not a symlink, return an error
+    if target_path.exists() && std::fs::read_link(&target_path).is_err() {
+        return Err(ReShaderError::Symlink(
+            directory.to_str().unwrap().to_string(),
+            target_path.to_str().unwrap().to_string(),
+            "Directory already exists".to_string(),
+        ));
+    } else if target_path.exists() && std::fs::read_link(&target_path).is_ok() {
+        return Ok(());
+    }
+
+    std::os::unix::fs::symlink(directory, &target_path)?;
+
     Ok(())
 }
 
@@ -207,6 +341,11 @@ pub async fn install_reshade(
         game_path.join("d3dcompiler_47.dll"),
     )?;
 
+    let ini_path = game_path.join("ReShade.ini");
+    if !ini_path.exists() {
+        std::fs::write(ini_path, DEFAULT_INI)?;
+    }
+
     Ok(())
 }
 
@@ -249,6 +388,11 @@ pub async fn install_presets(
     .run()?;
     std::fs::remove_dir_all(directory.join("gshade-shaders"))?;
 
+    let intermediate_path = directory.join("reshade-shaders").join("Intermediate");
+    if !intermediate_path.exists() {
+        std::fs::create_dir(intermediate_path)?;
+    }
+
     Ok(())
 }
 
@@ -280,22 +424,16 @@ pub fn uninstall(game_path: &Path) -> ReShaderResult<()> {
 
 /// Installs the GShade presets and shaders to the given game directory by symlinking
 pub fn install_preset_for_game(data_dir: &Path, game_path: &Path) -> ReShaderResult<()> {
-    let target_preset_path = PathBuf::from(game_path).join("reshade-presets");
-    let target_shaders_path = PathBuf::from(game_path).join("reshade-shaders");
+    let target_preset_path = PathBuf::from(game_path).join("gshade-presets");
+    let target_shaders_path = PathBuf::from(game_path).join("gshade-shaders");
 
-    if std::fs::read_link(target_preset_path).is_ok()
-        || std::fs::read_link(target_shaders_path).is_ok()
+    if std::fs::read_link(&target_preset_path).is_ok()
+        || std::fs::read_link(&target_shaders_path).is_ok()
     {
         return Ok(());
     }
 
-    std::os::unix::fs::symlink(
-        data_dir.join("reshade-presets"),
-        PathBuf::from(game_path).join("reshade-presets"),
-    )?;
-    std::os::unix::fs::symlink(
-        data_dir.join("reshade-shaders"),
-        PathBuf::from(game_path).join("reshade-shaders"),
-    )?;
+    std::os::unix::fs::symlink(data_dir.join("reshade-presets"), target_preset_path)?;
+    std::os::unix::fs::symlink(data_dir.join("reshade-shaders"), target_shaders_path)?;
     Ok(())
 }
