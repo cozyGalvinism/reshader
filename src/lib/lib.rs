@@ -13,8 +13,9 @@
 use dircpy::CopyBuilder;
 use lazy_static::lazy_static;
 use std::{
+    fmt::{Display, Formatter},
     io::{Read, Seek},
-    path::{Path, PathBuf}, fmt::{Display, Formatter},
+    path::{Path, PathBuf},
 };
 
 use crate::prelude::*;
@@ -51,7 +52,7 @@ lazy_static! {
                     .replace('\\', "/")
                     .replace("reshade-shaders", "Merged");
                 let download_url = section.get("DownloadUrl").unwrap().to_string();
-                
+
                 ShaderCollection::new(
                     enabled,
                     required,
@@ -120,7 +121,7 @@ impl ShaderCollection {
     }
 
     /// Unpacks the shader collection to the given directory and return the name of the root directory of the zip file
-    /// 
+    ///
     /// If there is no root directory in the zip file, one will be created.
     pub fn unpack(&self, target_directory: &Path) -> ReShaderResult<String> {
         let zip_path = target_directory.join(format!("{}.zip", &self.name));
@@ -157,11 +158,7 @@ impl ShaderCollection {
 
 impl Display for ShaderCollection {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "{}",
-            self.name,
-        )
+        write!(f, "{}", self.name,)
     }
 }
 
@@ -236,8 +233,7 @@ pub async fn download_minimal_reshade_shaders(directory: &Path) -> ReShaderResul
         .iter()
         .filter(|c| c.enabled)
         .collect::<Vec<_>>();
-    download_shader_collections(&minimal_shaders, directory)
-        .await?;
+    download_shader_collections(&minimal_shaders, directory).await?;
 
     Ok(())
 }

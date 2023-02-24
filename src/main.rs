@@ -11,8 +11,9 @@ use strum::{EnumIter, IntoEnumIterator};
 
 use crate::config::Config;
 use reshaderlib::{
-    download_minimal_reshade_shaders, download_reshade, install_preset_for_game, install_presets,
-    install_reshade, install_reshade_shaders, uninstall, SHADER_COLLECTIONS, download_shader_collections,
+    download_minimal_reshade_shaders, download_reshade, download_shader_collections,
+    install_preset_for_game, install_presets, install_reshade, install_reshade_shaders, uninstall,
+    SHADER_COLLECTIONS,
 };
 
 mod cli;
@@ -140,7 +141,8 @@ async fn tui(
                         download_minimal_reshade_shaders(data_dir).await?;
                     }
                     ReShadeShadersOptions::Select => {
-                        let collections = tui::prompt_select_select_shaders(SHADER_COLLECTIONS.iter().collect())?;
+                        let collections =
+                            tui::prompt_select_select_shaders(SHADER_COLLECTIONS.iter().collect())?;
                         tui::print_downloading_shaders();
                         download_shader_collections(&collections, data_dir).await?;
                     }

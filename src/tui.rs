@@ -81,12 +81,10 @@ pub fn prompt_select_game_paths_shaders(paths: Vec<String>) -> InquireResult<Vec
     .prompt()
 }
 
-pub fn prompt_select_select_shaders(collections: Vec<&ShaderCollection>) -> InquireResult<Vec<&ShaderCollection>> {
-    inquire::MultiSelect::new(
-        "Select the shaders you want to install",
-        collections,
-    )
-    .prompt()
+pub fn prompt_select_select_shaders(
+    collections: Vec<&ShaderCollection>,
+) -> InquireResult<Vec<&ShaderCollection>> {
+    inquire::MultiSelect::new("Select the shaders you want to install", collections).prompt()
 }
 
 pub fn prompt_gshade_reshade_replacement() -> InquireResult<bool> {
