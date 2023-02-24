@@ -23,8 +23,6 @@ use crate::prelude::*;
 /// Common ReShader types and functions
 pub mod prelude;
 
-mod git;
-
 static LIB_VERSION: &str = env!("CARGO_PKG_VERSION");
 static DEFAULT_INI: &str = include_str!("../../reshade.example.ini");
 static PACKAGES_INI: &str = include_str!("../../shader-list/EffectPackages.ini");
