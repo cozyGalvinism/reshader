@@ -14,7 +14,7 @@ use dircpy::CopyBuilder;
 use lazy_static::lazy_static;
 use std::{
     io::{Read, Seek},
-    path::{Path, PathBuf},
+    path::{Path, PathBuf}, fmt::{Display, Formatter},
 };
 
 use crate::prelude::*;
@@ -26,69 +26,147 @@ mod git;
 
 static LIB_VERSION: &str = env!("CARGO_PKG_VERSION");
 static DEFAULT_INI: &str = include_str!("../../reshade.example.ini");
+static PACKAGES_INI: &str = include_str!("../../shader-list/EffectPackages.ini");
+
+/// Contains shader collections parsed from the EffectPackages.ini file
+pub mod ini_packages {}
 
 lazy_static! {
-    static ref SHADER_REPOSITORIES: Vec<Shader> = vec![
-        Shader::new("SweetFX", "https://github.com/CeeJayDK/SweetFX", true, None),
-        Shader::new("PD80", "https://github.com/prod80/prod80-ReShade-Repository", false, None),
-        // default branch is slim, which doesn't include all shaders
-        Shader::new("ReShade","https://github.com/crosire/reshade-shaders", true, Some("master")),
-        Shader::new("qUINT", "https://github.com/martymcmodding/qUINT", false, None),
-        Shader::new("AstrayFX", "https://github.com/BlueSkyDefender/AstrayFX", false, None),
-    ];
+    /// The default ReShade shader list
+    pub static ref SHADER_COLLECTIONS: Vec<ShaderCollection> = {
+        ini::Ini::load_from_str_noescape(PACKAGES_INI)
+            .unwrap()
+            .iter()
+            .map(|(_, section)| {
+                let enabled = section.get("Enabled").unwrap_or("0").parse::<u8>().unwrap_or(0) == 1;
+                let required = section.get("Required").unwrap_or("0").parse::<u8>().unwrap_or(0) == 1;
+                let name = section.get("PackageName").unwrap().to_string();
+                let description = section.get("PackageDescription").unwrap().to_string();
+                let install_path = section.get("InstallPath").unwrap()
+                    [2..]
+                    .replace('\\', "/")
+                    .replace("reshade-shaders", "Merged");
+                let texture_install_path = section.get("TextureInstallPath").unwrap()
+                    [2..]
+                    .replace('\\', "/")
+                    .replace("reshade-shaders", "Merged");
+                let download_url = section.get("DownloadUrl").unwrap().to_string();
+                
+                ShaderCollection::new(
+                    enabled,
+                    required,
+                    &name,
+                    &description,
+                    &install_path,
+                    &texture_install_path,
+                    &download_url,
+                )
+            })
+            .collect()
+    };
 }
 
-/// A shader repository
-pub struct Shader {
-    /// The name of the shader
+/// A shader collection
+#[derive(Debug)]
+pub struct ShaderCollection {
+    /// Whether the shader collection is enabled
+    pub enabled: bool,
+    /// Whether the shader collection is required
+    pub required: bool,
+    /// The name of the shader collection
     pub name: String,
-    /// The URL to the shader repository
-    pub repository: String,
-    /// The branch to use
-    pub branch: Option<String>,
-    /// Is this shader an essential shader?
-    pub essential: bool,
+    /// The description of the shader collection
+    pub description: String,
+    /// The path to install the shaders to
+    pub install_path: String,
+    /// The path to install the textures to
+    pub texture_install_path: String,
+    /// The URL to download the shader collection from
+    pub download_url: String,
 }
 
-impl Shader {
-    /// Creates a new shader repository
-    pub fn new(name: &str, repository: &str, essential: bool, branch: Option<&str>) -> Self {
+impl ShaderCollection {
+    /// Creates a new shader collection
+    pub fn new(
+        enabled: bool,
+        required: bool,
+        name: &str,
+        description: &str,
+        install_path: &str,
+        texture_install_path: &str,
+        download_url: &str,
+    ) -> Self {
         Self {
+            enabled,
+            required,
             name: name.to_string(),
-            repository: repository.to_string(),
-            branch: branch.map(|b| b.to_string()),
-            essential,
+            description: description.to_string(),
+            install_path: install_path.to_string(),
+            texture_install_path: texture_install_path.to_string(),
+            download_url: download_url.to_string(),
         }
     }
 
-    /// Pulls the latest changes from the shader repository
-    pub fn pull(&self, directory: &Path) -> ReShaderResult<()> {
-        let target_directory = directory.join(&self.name);
-        git::pull(&target_directory, self.branch.as_deref())?;
+    /// Downloads the shader collection to the given directory
+    pub async fn download(&self, target_directory: &Path) -> ReShaderResult<()> {
+        if !target_directory.exists() {
+            std::fs::create_dir(target_directory)?;
+        }
+        let target_path = target_directory.join(format!("{}.zip", &self.name));
+        let client = reqwest::Client::new();
+        download_file(&client, &self.download_url, &target_path).await?;
 
         Ok(())
     }
 
-    /// Clones the shader repository
-    pub fn clone_repo(&self, target_directory: &Path) -> ReShaderResult<git2::Repository> {
-        let target_directory = target_directory.join(&self.name);
-        if target_directory.exists() {
-            return Ok(git2::Repository::open(&target_directory)?);
+    /// Unpacks the shader collection to the given directory and return the name of the root directory of the zip file
+    /// 
+    /// If there is no root directory in the zip file, one will be created.
+    pub fn unpack(&self, target_directory: &Path) -> ReShaderResult<String> {
+        let zip_path = target_directory.join(format!("{}.zip", &self.name));
+        let mut zip_file = std::fs::File::open(&zip_path)?;
+        let mut archive = zip::ZipArchive::new(&mut zip_file)?;
+        let mut root_dir = None;
+        for i in 0..archive.len() {
+            let mut file = archive.by_index(i)?;
+            let outpath = target_directory.join(file.enclosed_name().unwrap());
+            if (*file.name()).ends_with('/') {
+                std::fs::create_dir_all(&outpath)?;
+            } else {
+                if let Some(parent) = outpath.parent() {
+                    if !parent.exists() {
+                        std::fs::create_dir_all(parent)?;
+                    }
+                }
+                let mut outfile = std::fs::File::create(&outpath)?;
+                std::io::copy(&mut file, &mut outfile)?;
+            }
+            if root_dir.is_none() {
+                root_dir = Some(file.name().to_string());
+            }
         }
-
-        let fetch_options = git2::FetchOptions::new();
-        let mut builder = git2::build::RepoBuilder::new();
-        builder.fetch_options(fetch_options);
-        if let Some(branch) = &self.branch {
-            builder.branch(branch);
+        if let Some(root_dir) = root_dir {
+            Ok(root_dir)
+        } else {
+            let root_dir = format!("{}.zip", &self.name);
+            std::fs::create_dir(target_directory.join(&root_dir))?;
+            Ok(root_dir)
         }
+    }
+}
 
-        Ok(builder.clone(&self.repository, &target_directory)?)
+impl Display for ShaderCollection {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}",
+            self.name,
+        )
     }
 }
 
 /// Downloads a file from the given URL to the given path
-pub async fn download_file(client: &reqwest::Client, url: &str, path: &str) -> ReShaderResult<()> {
+pub async fn download_file(client: &reqwest::Client, url: &str, path: &Path) -> ReShaderResult<()> {
     let resp = client
         .get(url)
         .header(
@@ -107,51 +185,59 @@ pub async fn download_file(client: &reqwest::Client, url: &str, path: &str) -> R
     Ok(())
 }
 
-/// Clones ReShade shaders from their repositories
-pub fn clone_reshade_shaders(directory: &Path) -> ReShaderResult<()> {
-    let merge_directory = directory.join("Merged");
-    if !merge_directory.exists() {
-        std::fs::create_dir(&merge_directory)?;
-    }
-    let shader_directory = merge_directory.join("Shaders");
-    if !shader_directory.exists() {
-        std::fs::create_dir(&shader_directory)?;
-    }
-    let texture_directory = merge_directory.join("Textures");
-    if !texture_directory.exists() {
-        std::fs::create_dir(&texture_directory)?;
-    }
-    let intermediate_directory = merge_directory.join("Intermediate");
-    if !intermediate_directory.exists() {
-        std::fs::create_dir(&intermediate_directory)?;
+/// Downloads the specified shader collections to the given directory
+pub async fn download_shader_collections(
+    collections: &[&ShaderCollection],
+    directory: &Path,
+) -> ReShaderResult<()> {
+    let zip_directory = directory.join("zips");
+
+    if zip_directory.exists() {
+        std::fs::remove_dir_all(&zip_directory)?;
     }
 
-    for shader in SHADER_REPOSITORIES.iter() {
-        shader.clone_repo(directory)?;
-        shader.pull(directory)?;
+    if !zip_directory.exists() {
+        std::fs::create_dir(&zip_directory)?;
+    }
 
-        let repo_directory = directory.join(&shader.name);
+    for collection in collections {
+        collection.download(&zip_directory).await?;
+        let root_dir = collection.unpack(&zip_directory)?;
+
+        let repo_directory = zip_directory.join(root_dir);
         let repo_shader_directory = repo_directory.join("Shaders");
         let repo_texture_directory = repo_directory.join("Textures");
-        let target_directory = if shader.essential {
-            shader_directory.clone()
-        } else {
-            shader_directory.join(&shader.name)
-        };
-        if !target_directory.exists() {
-            std::fs::create_dir(&target_directory)?;
+        let target_shader_directory = directory.join(&collection.install_path);
+        let target_texture_directory = directory.join(&collection.texture_install_path);
+        if !target_shader_directory.exists() {
+            std::fs::create_dir_all(&target_shader_directory)?;
+        }
+        if !target_texture_directory.exists() {
+            std::fs::create_dir_all(&target_texture_directory)?;
         }
 
         if repo_shader_directory.exists() {
-            let builder = CopyBuilder::new(&repo_shader_directory, &target_directory);
+            let builder = CopyBuilder::new(&repo_shader_directory, &target_shader_directory);
             builder.overwrite(true).run()?;
         }
 
         if repo_texture_directory.exists() {
-            let builder = CopyBuilder::new(&repo_texture_directory, &texture_directory);
+            let builder = CopyBuilder::new(&repo_texture_directory, &target_texture_directory);
             builder.overwrite(true).run()?;
         }
     }
+
+    Ok(())
+}
+
+/// Downloads the minimal ReShade shaders and textures to a directory
+pub async fn download_minimal_reshade_shaders(directory: &Path) -> ReShaderResult<()> {
+    let minimal_shaders = SHADER_COLLECTIONS
+        .iter()
+        .filter(|c| c.enabled)
+        .collect::<Vec<_>>();
+    download_shader_collections(&minimal_shaders, directory)
+        .await?;
 
     Ok(())
 }
@@ -261,7 +347,7 @@ pub async fn download_reshade(
             .expect("Could not get latest ReShade version");
         let reshade_path = tmp.path().join("reshade.exe");
 
-        download_file(client, &reshade_url, reshade_path.to_str().unwrap()).await?;
+        download_file(client, &reshade_url, &reshade_path).await?;
         reshade_path
     };
 
@@ -269,7 +355,7 @@ pub async fn download_reshade(
     download_file(
         client,
         "https://lutris.net/files/tools/dll/d3dcompiler_47.dll",
-        d3dcompiler_path.to_str().unwrap(),
+        &d3dcompiler_path,
     )
     .await?;
 
