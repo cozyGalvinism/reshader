@@ -1,7 +1,7 @@
 [package]
 name = "reshader"
 description = "A tool and library for installing ReShade on Linux!"
-version = "1.0.1"
+version = "2.0.0-alpha.1"
 edition = "2021"
 authors = ["cozyGalvinism <jean@der-capta.in>"]
 exclude = [
@@ -12,6 +12,7 @@ exclude = [
     "shader-list",
 ]
 license = "LGPL-3.0-only"
+repository = "https://github.com/cozyGalvinism/reshader"
 
 [lib]
 name = "reshaderlib"

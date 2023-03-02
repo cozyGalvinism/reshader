@@ -1,5 +1,12 @@
 # ReShader
 
+[![crate-badge]][crate-link] [![docs-badge]][docs-link]
+
+[crate-badge]: https://img.shields.io/crates/v/reshader.svg
+[crate-link]: https://crates.io/crates/reshader
+[docs-badge]: https://docs.rs/reshader/badge.svg
+[docs-link]: https://docs.rs/reshader
+
 A tool and library for installing ReShade on Linux!
 
 **This tool is still work in progress, so expect bugs!**
@@ -7,9 +14,7 @@ A tool and library for installing ReShade on Linux!
 ## Installation
 
 ```bash
-git clone https://github.com/cozygalvinism/reshader.git
-cd reshader
-cargo install --path .
+cargo install --locked reshader
 ```
 
 ## Usage

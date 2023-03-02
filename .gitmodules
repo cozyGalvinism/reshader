@@ -1,0 +1,4 @@
+[submodule "shader-list"]
+	path = shader-list
+	url = https://github.com/crosire/reshade-shaders
+	branch = list

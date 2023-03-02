@@ -2,6 +2,7 @@ use std::path::{Path, PathBuf};
 
 use colored::Colorize;
 use inquire::{error::InquireResult, InquireError, Text};
+use reshaderlib::ShaderCollection;
 
 pub fn prompt_game_path() -> InquireResult<PathBuf> {
     let game_path = Text::new("Enter the path to your ReShade-supported game")
@@ -78,6 +79,26 @@ pub fn prompt_select_game_paths_shaders(paths: Vec<String>) -> InquireResult<Vec
         paths,
     )
     .prompt()
+}
+
+pub fn prompt_select_select_shaders(
+    collections: Vec<&ShaderCollection>,
+) -> InquireResult<Vec<&ShaderCollection>> {
+    inquire::MultiSelect::new("Select the shaders you want to install", collections).prompt()
+}
+
+pub fn prompt_gshade_reshade_replacement() -> InquireResult<bool> {
+    inquire::Confirm::new("GShade and ReShade shaders are not compatible with each other. Do you want to replace ReShade with GShade?")
+        .with_help_message("Answering no will continue to the next selected game.")
+        .with_default(true)
+        .prompt()
+}
+
+pub fn prompt_reshade_gshade_replacement() -> InquireResult<bool> {
+    inquire::Confirm::new("GShade and ReShade shaders are not compatible with each other. Do you want to replace GShade with ReShade?")
+        .with_help_message("Answering no will continue to the next selected game.")
+        .with_default(true)
+        .prompt()
 }
 
 pub fn print_reshade_success() {
@@ -181,9 +202,9 @@ pub fn print_error(error: InquireError) {
     println!();
 }
 
-pub fn print_cloning() {
+pub fn print_downloading_shaders() {
     println!();
-    println!("{}", "Cloning shader repositories...".cyan());
+    println!("{}", "Downloading shaders...".cyan());
     println!();
 }
 

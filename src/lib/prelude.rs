@@ -53,6 +53,10 @@ pub enum ReShaderError {
     #[error(transparent)]
     /// Forwards the errors from `git2::Error`
     Git(#[from] git2::Error),
+
+    #[error(transparent)]
+    /// Forwards the errors from `zip::result::ZipError`
+    Zip(#[from] zip::result::ZipError),
 }
 
 impl From<ReShaderError> for inquire::InquireError {
