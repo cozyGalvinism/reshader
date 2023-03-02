@@ -308,11 +308,11 @@ pub async fn get_latest_reshade_version(
     // just get a letsencrypt cert already
     if vanilla {
         Ok(format!(
-            "http://static.reshade.me/downloads/ReShade_Setup_{version}.exe"
+            "https://reshade.me/downloads/ReShade_Setup_{version}.exe"
         ))
     } else {
         Ok(format!(
-            "http://static.reshade.me/downloads/ReShade_Setup_{version}_Addon.exe"
+            "https://reshade.me/downloads/ReShade_Setup_{version}_Addon.exe"
         ))
     }
 }
