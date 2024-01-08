@@ -134,14 +134,16 @@ pub fn print_gshade_hint() {
     );
     println!(
         "{}\n{}",
-        "https://gitlab.com/Mortalitas/GShade-C-Shaders/-/tree/main/gshade-shaders?ref_type=heads"
+        "https://gitlab.com/Mortalitas/GShade-C-Shaders"
             .white()
             .bold(), 
-        "https://gitlab.com/Mortalitas/GShade-Presets/-/tree/master/FFXIV?ref_type=heads"
+        "https://gitlab.com/Mortalitas/GShade-Presets"
             .white()
             .bold(), 
     );
     println!();
+    println!(
+        "{}", "To download the required zip files, click the blue \"Code\" button and select \"zip\" under \"Download source code\"".cyan());
 }
 
 pub fn print_presets_success_no_games(directory: &Path) {

@@ -187,8 +187,8 @@ async fn tui(
                 if open {
                     tui::print_gshade_file_move(data_dir);
 
-                    let _ = open::that("https://gitlab.com/Mortalitas/GShade-C-Shaders/-/tree/main/gshade-shaders?ref_type=heads");
-                    let _ = open::that("https://gitlab.com/Mortalitas/GShade-Presets/-/tree/master/FFXIV?ref_type=heads");
+                    let _ = open::that("https://gitlab.com/Mortalitas/GShade-C-Shaders");
+                    let _ = open::that("https://gitlab.com/Mortalitas/GShade-Presets");
                     tui::print_gshade_hint();
                 }
 
@@ -199,8 +199,8 @@ async fn tui(
                 }
                 install_presets(
                     data_dir,
-                    &data_dir.join("presets.zip"),
-                    &data_dir.join("shaders.zip"),
+                    &data_dir.join("GShade-Presets-master.zip"),
+                    &data_dir.join("GShade-C-Shaders-main.zip"),
                 )
                 .await?;
 
