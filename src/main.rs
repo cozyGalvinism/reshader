@@ -187,7 +187,8 @@ async fn tui(
                 if open {
                     tui::print_gshade_file_move(data_dir);
 
-                    let _ = open::that("https://github.com/HereInPlainSight/gshade_installer/blob/master/gshade_installer.sh#L352");
+                    let _ = open::that("https://gitlab.com/Mortalitas/GShade-C-Shaders/-/tree/main/gshade-shaders?ref_type=heads");
+                    let _ = open::that("https://gitlab.com/Mortalitas/GShade-Presets/-/tree/master/FFXIV?ref_type=heads");
                     tui::print_gshade_hint();
                 }
 

@@ -133,10 +133,13 @@ pub fn print_gshade_hint() {
         "If your browser does not open, please open the following links manually:".cyan()
     );
     println!(
-        "{}",
-        "https://github.com/HereInPlainSight/gshade_installer/blob/master/gshade_installer.sh#L352"
+        "{}\n{}",
+        "https://gitlab.com/Mortalitas/GShade-C-Shaders/-/tree/main/gshade-shaders?ref_type=heads"
             .white()
-            .bold()
+            .bold(), 
+        "https://gitlab.com/Mortalitas/GShade-Presets/-/tree/master/FFXIV?ref_type=heads"
+            .white()
+            .bold(), 
     );
     println!();
 }
