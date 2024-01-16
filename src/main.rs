@@ -187,7 +187,8 @@ async fn tui(
                 if open {
                     tui::print_gshade_file_move(data_dir);
 
-                    let _ = open::that("https://github.com/HereInPlainSight/gshade_installer/blob/master/gshade_installer.sh#L352");
+                    let _ = open::that("https://gitlab.com/Mortalitas/GShade-C-Shaders");
+                    let _ = open::that("https://gitlab.com/Mortalitas/GShade-Presets");
                     tui::print_gshade_hint();
                 }
 
@@ -198,8 +199,8 @@ async fn tui(
                 }
                 install_presets(
                     data_dir,
-                    &data_dir.join("presets.zip"),
-                    &data_dir.join("shaders.zip"),
+                    &data_dir.join("GShade-Presets-master.zip"),
+                    &data_dir.join("GShade-C-Shaders-main.zip"),
                 )
                 .await?;
 

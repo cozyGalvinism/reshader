@@ -446,7 +446,7 @@ pub async fn install_presets(
         .map_err(|_| ReShaderError::ExtractZipFile)?;
 
     CopyBuilder::new(
-        directory.join("GShade-Presets-master"),
+        directory.join("./GShade-Presets-master/FFXIV"),
         directory.join("reshade-presets"),
     )
     .overwrite(true)
@@ -461,12 +461,12 @@ pub async fn install_presets(
         .map_err(|_| ReShaderError::ExtractZipFile)?;
 
     CopyBuilder::new(
-        directory.join("gshade-shaders"),
+        directory.join("./GShade-C-Shaders-main/gshade-shaders"),
         directory.join("reshade-shaders"),
     )
     .overwrite(true)
     .run()?;
-    std::fs::remove_dir_all(directory.join("gshade-shaders"))?;
+    std::fs::remove_dir_all(directory.join("GShade-C-Shaders-main"))?;
 
     let intermediate_path = directory.join("reshade-shaders").join("Intermediate");
     if !intermediate_path.exists() {
