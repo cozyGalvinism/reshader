@@ -7,6 +7,12 @@
 [docs-badge]: https://docs.rs/reshader/badge.svg
 [docs-link]: https://docs.rs/reshader
 
+## Notice
+
+As I am extremely busy at this time (16/01/2024) and have been for almost a year now, I currently do not have the time to actively develop this tool and probably won't have for another year due to my job and other projects. As such, this project is currently on **hiatus**.
+
+---
+
 A tool and library for installing ReShade on Linux!
 
 **This tool is still work in progress, so expect bugs!**
